@@ -5,7 +5,8 @@ import SurveyResponse from '@/components/SurveyResponse'
 import SurveyResults from '@/components/SurveyResults'
 import { authOptions } from '@/lib/auth'
 import { notFound } from 'next/navigation'
-import { Survey } from '@/types/survey'
+import Link from 'next/link'
+import Image from 'next/image'
 
 export default async function SurveyPage({
   params: { id },
@@ -17,7 +18,13 @@ export default async function SurveyPage({
   const survey = await prisma.survey.findUnique({
     where: { id },
     include: {
-      user: true,
+      user: {
+        select: {
+          name: true,
+          image: true,
+          twitter_id: true
+        }
+      },
       choices: {
         orderBy: { order: 'asc' },
       },
@@ -39,19 +46,78 @@ export default async function SurveyPage({
           attributes: true,
         },
       } : undefined,
+      _count: {
+        select: {
+          responses: true
+        }
+      }
     },
-  }) as Survey | null
+  })
 
   if (!survey) {
     return notFound()
   }
 
-  const hasResponded = survey.responses.some(r => r.userId === session?.user?.id)
+  const hasResponded = survey.responses?.some(r => r.userId === session?.user?.id)
   const isCreator = session?.user?.id === survey.userId
+
+  const formattedDate = new Date(survey.created_at).toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">{survey.title}</h1>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold mb-4">{survey.title}</h1>
+        <div className="flex items-center gap-4 mb-4">
+          {survey.user.twitter_id ? (
+            <Link 
+              href={`https://twitter.com/${survey.user.twitter_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 hover:text-blue-500"
+            >
+              {survey.user.image && (
+                <Image
+                  src={survey.user.image}
+                  alt={survey.user.name || '作成者のプロフィール画像'}
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
+              )}
+              <div className="flex flex-col">
+                <span className="font-medium">{survey.user.name}</span>
+                <span className="text-sm text-gray-500">@{survey.user.twitter_id}</span>
+              </div>
+            </Link>
+          ) : (
+            <div className="flex items-center space-x-2">
+              {survey.user.image && (
+                <Image
+                  src={survey.user.image}
+                  alt={survey.user.name || '作成者のプロフィール画像'}
+                  width={40}
+                  height={40}
+                  className="rounded-full"
+                />
+              )}
+              <div className="flex flex-col">
+                <span className="font-medium">{survey.user.name}</span>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-4 text-sm text-gray-600">
+          <span>回答数: {survey._count.responses}件</span>
+          <span>•</span>
+          <time dateTime={survey.created_at.toISOString()}>{formattedDate}</time>
+        </div>
+      </div>
       
       {/* 結果表示（回答済みまたは作成者の場合のみ） */}
       {(hasResponded || isCreator) ? (
