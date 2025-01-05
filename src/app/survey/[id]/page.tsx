@@ -5,6 +5,7 @@ import SurveyResponse from '@/components/SurveyResponse'
 import SurveyResults from '@/components/SurveyResults'
 import { authOptions } from '@/lib/auth'
 import { notFound } from 'next/navigation'
+import { Survey } from '@/types/survey'
 
 export default async function SurveyPage({
   params: { id },
@@ -39,13 +40,13 @@ export default async function SurveyPage({
         },
       } : undefined,
     },
-  })
+  }) as Survey | null
 
   if (!survey) {
     return notFound()
   }
 
-  const hasResponded = !!survey.responses?.some(r => r.userId === session?.user?.id)
+  const hasResponded = survey.responses.some(r => r.userId === session?.user?.id)
   const isCreator = session?.user?.id === survey.userId
 
   return (

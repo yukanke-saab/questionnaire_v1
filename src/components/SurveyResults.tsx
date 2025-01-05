@@ -2,43 +2,7 @@
 
 import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-
-interface Choice {
-  id: string
-  text?: string | null
-  image_url?: string | null
-  order: number
-}
-
-interface AttributeChoice {
-  id: string
-  text: string
-  order: number
-}
-
-interface Attribute {
-  id: string
-  type: string
-  title: string
-  choices: AttributeChoice[]
-}
-
-interface Response {
-  id: string
-  choiceId: string
-  attributes: {
-    attributeSettingId: string
-    attributeChoiceId: string
-  }[]
-}
-
-interface Survey {
-  id: string
-  title: string
-  choices: Choice[]
-  attributes: Attribute[]
-  responses: Response[]
-}
+import type { Survey } from '@/types/survey'
 
 interface SurveyResultsProps {
   survey: Survey

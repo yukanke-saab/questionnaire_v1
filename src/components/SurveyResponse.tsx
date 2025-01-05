@@ -1,72 +1,32 @@
 'use client'
 
+import { useSession, signIn } from 'next-auth/react'
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
-import Image from 'next/image'
 import LoginPrompt from './LoginPrompt'
-
-interface Choice {
-  id: string
-  text?: string | null
-  image_url?: string | null
-  order: number
-}
-
-interface AttributeChoice {
-  id: string
-  text: string
-  order: number
-}
-
-interface Attribute {
-  id: string
-  type: string
-  title: string
-  choices: AttributeChoice[]
-}
-
-interface Survey {
-  id: string
-  title: string
-  choice_type: string
-  choices: Choice[]
-  attributes: Attribute[]
-}
+import type { Survey } from '@/types/survey'
 
 interface SurveyResponseProps {
   survey: Survey
 }
 
 export default function SurveyResponse({ survey }: SurveyResponseProps) {
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null)
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  if (status === 'loading') {
-    return <div>Loading...</div>
-  }
 
   if (!session) {
     return <LoginPrompt />
   }
 
-  const handleAttributeChange = (attributeId: string, choiceId: string) => {
-    setSelectedAttributes(prev => ({
-      ...prev,
-      [attributeId]: choiceId
-    }))
-  }
-
   const handleSubmit = async () => {
     if (!selectedChoice) {
-      alert('回答を選択してください')
+      alert('選択肢を選んでください')
       return
     }
 
     setIsSubmitting(true)
     try {
-      // 必須の属性が全て選択されているか確認
       const hasAllRequiredAttributes = survey.attributes.every(
         attr => selectedAttributes[attr.id]
       )
@@ -93,7 +53,6 @@ export default function SurveyResponse({ survey }: SurveyResponseProps) {
 
       if (!response.ok) throw new Error('Failed to submit response')
 
-      // 回答完了後、結果ページにリダイレクト
       window.location.reload()
     } catch (error) {
       console.error('Error submitting response:', error)
@@ -113,7 +72,7 @@ export default function SurveyResponse({ survey }: SurveyResponseProps) {
             <button
               key={choice.id}
               onClick={() => setSelectedChoice(choice.id)}
-              className={`p-4 border rounded-lg hover:bg-gray-50 transition-all ${
+              className={`p-4 border rounded-lg hover:bg-gray-50 ${
                 selectedChoice === choice.id ? 'ring-2 ring-blue-500' : ''
               }`}
             >
@@ -123,12 +82,10 @@ export default function SurveyResponse({ survey }: SurveyResponseProps) {
               {(survey.choice_type === 'TEXT_WITH_IMAGE' || survey.choice_type === 'IMAGE_ONLY') &&
                 choice.image_url && (
                   <div className="mt-2">
-                    <Image
+                    <img
                       src={choice.image_url}
                       alt={choice.text || '選択肢の画像'}
-                      width={300}
-                      height={200}
-                      className="rounded-md"
+                      className="max-h-32 rounded"
                     />
                   </div>
                 )}
@@ -148,9 +105,11 @@ export default function SurveyResponse({ survey }: SurveyResponseProps) {
               </label>
               <select
                 value={selectedAttributes[attribute.id] || ''}
-                onChange={(e) => handleAttributeChange(attribute.id, e.target.value)}
+                onChange={(e) => setSelectedAttributes(prev => ({
+                  ...prev,
+                  [attribute.id]: e.target.value
+                }))}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
               >
                 <option value="">選択してください</option>
                 {attribute.choices.map((choice) => (
