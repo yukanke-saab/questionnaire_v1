@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import type { Survey } from '@/types/survey'
 
@@ -16,25 +16,60 @@ interface OverallResult {
 
 interface AttributeResult {
   name: string
-  [key: string]: number | string // インデックスシグネチャ
+  [key: string]: number | string
+  totalResponses?: number // ソート用に追加
 }
 
 type ResultType = OverallResult | AttributeResult
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    if ('count' in data) {
+      return (
+        <div className="bg-white p-2 shadow rounded border">
+          <p className="font-medium">{label}</p>
+          <p className="text-gray-600">回答数: {data.count}人</p>
+          <p className="text-gray-600">割合: {data.percentage.toFixed(1)}%</p>
+        </div>
+      );
+    } else {
+      return (
+        <div className="bg-white p-2 shadow rounded border">
+          <p className="font-medium">{label}</p>
+          {payload.map((entry: any) => (
+            <p key={entry.name} className="text-gray-600" style={{ color: entry.color }}>
+              {entry.name}: {entry.value.toFixed(1)}%
+            </p>
+          ))}
+        </div>
+      );
+    }
+  }
+  return null;
+};
+
 export default function SurveyResults({ survey }: SurveyResultsProps) {
   const [selectedAttribute, setSelectedAttribute] = useState<string | null>(null)
 
-  const overallResults: OverallResult[] = survey.choices.map(choice => {
-    const count = survey.responses.filter(r => r.choiceId === choice.id).length
-    const percentage = (count / Math.max(survey.responses.length, 1)) * 100
+  // 基本の集計データを作成し、回答数順にソート
+  const overallResults: OverallResult[] = useMemo(() => {
+    const results = survey.choices.map(choice => {
+      const count = survey.responses.filter(r => r.choiceId === choice.id).length
+      const percentage = (count / Math.max(survey.responses.length, 1)) * 100
 
-    return {
-      name: choice.text || '画像のみの選択肢',
-      count,
-      percentage: Math.round(percentage * 10) / 10
-    }
-  })
+      return {
+        name: choice.text || '画像のみの選択肢',
+        count,
+        percentage: Math.round(percentage * 10) / 10
+      }
+    })
 
+    // 回答数の降順でソート
+    return results.sort((a, b) => b.count - a.count)
+  }, [survey])
+
+  // 属性別のクロス集計データを作成
   const getAttributeResults = (attributeId: string): AttributeResult[] => {
     const attribute = survey.attributes.find(a => a.id === attributeId)
     if (!attribute) return []
@@ -53,43 +88,47 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
           ? (count / filteredResponses.length) * 100 
           : 0
 
-        const result: AttributeResult = {
-          name: choice.text || '画像のみの選択肢'
+        return {
+          name: choice.text || '画像のみの選択肢',
+          [attrChoice.text]: Math.round(percentage * 10) / 10,
+          totalResponses: count // この属性における合計回答数
         }
-        result[attrChoice.text] = Math.round(percentage * 10) / 10
-        return result
       })
     })
 
-    return results[0].map((item, index) => {
-      const mergedItem: AttributeResult = { name: item.name }
+    // 合計回答数を計算してソート用に使用
+    const mergedResults = results[0].map((item, index) => {
+      const mergedItem: AttributeResult = { 
+        name: item.name,
+        totalResponses: 0
+      }
       attribute.choices.forEach((attrChoice, i) => {
         const value = results[i][index][attrChoice.text]
         if (typeof value === 'number') {
           mergedItem[attrChoice.text] = value
+          // 各属性の回答数を合計
+          mergedItem.totalResponses! += results[i][index].totalResponses || 0
         }
       })
       return mergedItem
     })
+
+    // 合計回答数の降順でソート
+    return mergedResults.sort((a, b) => (b.totalResponses || 0) - (a.totalResponses || 0))
   }
 
-  const currentResults: ResultType[] = selectedAttribute 
+  const currentResults = selectedAttribute 
     ? getAttributeResults(selectedAttribute)
     : overallResults
-
-  const selectedAttributeData = selectedAttribute
-    ? survey.attributes.find(a => a.id === selectedAttribute)
-    : null
 
   const getChartColors = (count: number) => {
     const baseColors = ['#2563eb', '#7c3aed', '#db2777', '#dc2626', '#ea580c', '#ca8a04']
     return Array(count).fill(0).map((_, i) => baseColors[i % baseColors.length])
   }
 
-  const renderAttributeCell = (result: AttributeResult, choice: { text: string }) => {
-    const value = result[choice.text]
-    return typeof value === 'number' ? `${value}%` : '-'
-  }
+  const selectedAttributeData = selectedAttribute
+    ? survey.attributes.find(a => a.id === selectedAttribute)
+    : null
 
   return (
     <div className="space-y-6">
@@ -119,20 +158,22 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
       {/* グラフ表示 */}
       <div className="h-96">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={currentResults}>
+          <BarChart
+            data={currentResults}
+            layout="vertical"
+          >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="name"
-              angle={-45}
-              textAnchor="end"
-              height={80}
-              interval={0}
-            />
-            <YAxis 
-              label={{ value: '%', position: 'insideTop', offset: -10 }}
+            <XAxis
+              type="number"
               domain={[0, 100]}
+              tickFormatter={(value) => `${value}%`}
             />
-            <Tooltip />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={150}
+            />
+            <Tooltip content={<CustomTooltip />} />
             <Legend />
             {selectedAttributeData ? (
               selectedAttributeData.choices.map((choice, index) => (
@@ -192,7 +233,7 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
                         key={choice.id}
                         className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                       >
-                        {renderAttributeCell(result as AttributeResult, choice)}
+                        {result[choice.text]}%
                       </td>
                     ))
                   ) : (
