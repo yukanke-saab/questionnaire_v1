@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import type { Survey } from '@/types/survey'
 
 export default async function SurveyPage({
   params: { id },
@@ -15,14 +16,19 @@ export default async function SurveyPage({
 }) {
   const session = await getServerSession(authOptions)
 
-  const survey = await prisma.survey.findUnique({
+  const surveyData = await prisma.survey.findUnique({
     where: { id },
     include: {
       user: {
         select: {
+          id: true,
           name: true,
           image: true,
-          twitter_id: true
+          twitter_id: true,
+          created_at: true,
+          updated_at: true,
+          email: true,
+          emailVerified: true,
         }
       },
       choices: {
@@ -54,9 +60,12 @@ export default async function SurveyPage({
     },
   })
 
-  if (!survey) {
+  if (!surveyData) {
     return notFound()
   }
+
+  // 型アサーション
+  const survey = surveyData as unknown as Survey
 
   const hasResponded = survey.responses?.some(r => r.userId === session?.user?.id)
   const isCreator = session?.user?.id === survey.userId
@@ -113,7 +122,7 @@ export default async function SurveyPage({
           )}
         </div>
         <div className="flex items-center gap-4 text-sm text-gray-600">
-          <span>回答数: {survey._count.responses}件</span>
+          <span>回答数: {survey._count?.responses ?? 0}件</span>
           <span>•</span>
           <time dateTime={survey.created_at.toISOString()}>{formattedDate}</time>
         </div>

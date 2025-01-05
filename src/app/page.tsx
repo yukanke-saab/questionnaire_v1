@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
+import SurveyCard from '@/components/SurveyCard'
 
 enum SortType {
   Latest = 'latest',
@@ -24,6 +25,8 @@ export default async function Home({
       user: {
         select: {
           name: true,
+          image: true,
+          twitter_id: true,
         },
       },
       _count: {
@@ -78,35 +81,15 @@ export default async function Home({
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {surveys.map((survey) => (
-          <Link
+          <SurveyCard
             key={survey.id}
-            href={`/survey/${survey.id}`}
-            className="block bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow"
-          >
-            <h2 className="text-xl font-semibold mb-2 line-clamp-2">
-              {survey.title}
-            </h2>
-            <div className="text-sm text-gray-600 mb-3">
-              作成者: {survey.user.name}
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                回答数: {survey._count.responses}
-              </span>
-              {session?.user?.id && survey.responses.length > 0 && (
-                <span className="inline-block px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                  回答済み
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-gray-500 mt-2">
-              {new Date(survey.created_at).toLocaleDateString('ja-JP', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </div>
-          </Link>
+            id={survey.id}
+            title={survey.title}
+            createdAt={survey.created_at}
+            author={survey.user}
+            responseCount={survey._count.responses}
+            hasResponded={survey.responses && survey.responses.length > 0}
+          />
         ))}
       </div>
 
