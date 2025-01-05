@@ -8,13 +8,25 @@ interface SurveyResultsProps {
   survey: Survey
 }
 
+interface OverallResult {
+  name: string
+  count: number
+  percentage: number
+}
+
+interface AttributeResult {
+  name: string
+  [key: string]: number | string // インデックスシグネチャ
+}
+
+type ResultType = OverallResult | AttributeResult
+
 export default function SurveyResults({ survey }: SurveyResultsProps) {
   const [selectedAttribute, setSelectedAttribute] = useState<string | null>(null)
 
-  // 基本の集計データを作成
-  const overallResults = survey.choices.map(choice => {
+  const overallResults: OverallResult[] = survey.choices.map(choice => {
     const count = survey.responses.filter(r => r.choiceId === choice.id).length
-    const percentage = (count / survey.responses.length) * 100
+    const percentage = (count / Math.max(survey.responses.length, 1)) * 100
 
     return {
       name: choice.text || '画像のみの選択肢',
@@ -23,8 +35,7 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
     }
   })
 
-  // 属性別のクロス集計データを作成
-  const getAttributeResults = (attributeId: string) => {
+  const getAttributeResults = (attributeId: string): AttributeResult[] => {
     const attribute = survey.attributes.find(a => a.id === attributeId)
     if (!attribute) return []
 
@@ -42,30 +53,42 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
           ? (count / filteredResponses.length) * 100 
           : 0
 
-        return {
-          name: choice.text || '画像のみの選択肢',
-          [attrChoice.text]: Math.round(percentage * 10) / 10
+        const result: AttributeResult = {
+          name: choice.text || '画像のみの選択肢'
         }
+        result[attrChoice.text] = Math.round(percentage * 10) / 10
+        return result
       })
     })
 
-    // 選択肢ごとのデータをマージ
     return results[0].map((item, index) => {
-      const mergedItem = { name: item.name }
+      const mergedItem: AttributeResult = { name: item.name }
       attribute.choices.forEach((attrChoice, i) => {
-        Object.assign(mergedItem, results[i][index])
+        const value = results[i][index][attrChoice.text]
+        if (typeof value === 'number') {
+          mergedItem[attrChoice.text] = value
+        }
       })
       return mergedItem
     })
   }
 
-  const currentResults = selectedAttribute 
+  const currentResults: ResultType[] = selectedAttribute 
     ? getAttributeResults(selectedAttribute)
     : overallResults
+
+  const selectedAttributeData = selectedAttribute
+    ? survey.attributes.find(a => a.id === selectedAttribute)
+    : null
 
   const getChartColors = (count: number) => {
     const baseColors = ['#2563eb', '#7c3aed', '#db2777', '#dc2626', '#ea580c', '#ca8a04']
     return Array(count).fill(0).map((_, i) => baseColors[i % baseColors.length])
+  }
+
+  const renderAttributeCell = (result: AttributeResult, choice: { text: string }) => {
+    const value = result[choice.text]
+    return typeof value === 'number' ? `${value}%` : '-'
   }
 
   return (
@@ -111,19 +134,15 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
             />
             <Tooltip />
             <Legend />
-            {selectedAttribute ? (
-              // 属性別表示の場合
-              survey.attributes
-                .find(a => a.id === selectedAttribute)
-                ?.choices.map((choice, index) => (
-                  <Bar
-                    key={choice.id}
-                    dataKey={choice.text}
-                    fill={getChartColors(survey.choices.length)[index]}
-                  />
-                ))
+            {selectedAttributeData ? (
+              selectedAttributeData.choices.map((choice, index) => (
+                <Bar
+                  key={choice.id}
+                  dataKey={choice.text}
+                  fill={getChartColors(survey.choices.length)[index]}
+                />
+              ))
             ) : (
-              // 全体表示の場合
               <Bar dataKey="percentage" fill="#2563eb" />
             )}
           </BarChart>
@@ -140,17 +159,15 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
                 <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   選択肢
                 </th>
-                {selectedAttribute ? (
-                  survey.attributes
-                    .find(a => a.id === selectedAttribute)
-                    ?.choices.map(choice => (
-                      <th
-                        key={choice.id}
-                        className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        {choice.text}
-                      </th>
-                    ))
+                {selectedAttributeData ? (
+                  selectedAttributeData.choices.map(choice => (
+                    <th
+                      key={choice.id}
+                      className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {choice.text}
+                    </th>
+                  ))
                 ) : (
                   <>
                     <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -169,24 +186,22 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {result.name}
                   </td>
-                  {selectedAttribute ? (
-                    survey.attributes
-                      .find(a => a.id === selectedAttribute)
-                      ?.choices.map(choice => (
-                        <td
-                          key={choice.id}
-                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                        >
-                          {result[choice.text]}%
-                        </td>
-                      ))
+                  {selectedAttributeData ? (
+                    selectedAttributeData.choices.map(choice => (
+                      <td
+                        key={choice.id}
+                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                      >
+                        {renderAttributeCell(result as AttributeResult, choice)}
+                      </td>
+                    ))
                   ) : (
                     <>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {result.count}
+                        {(result as OverallResult).count}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {result.percentage}%
+                        {(result as OverallResult).percentage}%
                       </td>
                     </>
                   )}
