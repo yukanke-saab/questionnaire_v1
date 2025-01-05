@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         userId: session.user.id,
         choiceId,
         attributes: {
-          create: attributes.map((attr: any) => ({
+          create: attributes.map((attr: { attributeId: string, choiceId: string }) => ({
             attributeSettingId: attr.attributeId,
             attributeChoiceId: attr.choiceId,
           })),
