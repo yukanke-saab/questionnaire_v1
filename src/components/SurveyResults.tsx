@@ -12,12 +12,13 @@ interface OverallResult {
   name: string
   count: number
   percentage: number
+  [key: string]: string | number  // インデックスシグネチャを追加
 }
 
 interface AttributeResult {
   name: string
-  [key: string]: number | string
-  totalResponses?: number // ソート用に追加
+  [key: string]: number | string | undefined
+  totalResponses?: number
 }
 
 type ResultType = OverallResult | AttributeResult
@@ -233,7 +234,8 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
                         key={choice.id}
                         className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                       >
-                        {result[choice.text]}%
+                        {/* 型アサーションを追加 */}
+                        {((result as AttributeResult)[choice.text] as number | undefined)?.toFixed(1) ?? '0.0'}%
                       </td>
                     ))
                   ) : (
