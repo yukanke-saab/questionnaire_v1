@@ -10,61 +10,6 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Survey } from '@/types/survey'
-import { Metadata, ResolvingMetadata } from 'next'
-
-type Props = {
-  params: { id: string }
-}
-
-export async function generateMetadata(
-  { params }: Props,
-  parent: ResolvingMetadata
-): Promise<Metadata> {
-  // survey idを取得
-  const id = params.id
-
-  // アンケートデータを取得
-  const survey = await prisma.survey.findUnique({
-    where: { id },
-    include: {
-      user: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  })
-
-  if (!survey) {
-    return {
-      title: 'アンケートが見つかりません',
-    }
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-                 (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                 'http://localhost:3000')
-
-  return {
-    title: survey.title,
-    description: `作成者: ${survey.user.name || '名無し'}`,
-    openGraph: {
-      title: survey.title,
-      description: `作成者: ${survey.user.name || '名無し'}`,
-      images: [{
-        url: survey.thumbnail_url || `${baseUrl}/api/thumbnail?title=${encodeURIComponent(survey.title)}`,
-        width: 1200,
-        height: 630,
-      }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: survey.title,
-      description: `作成者: ${survey.user.name || '名無し'}`,
-      images: [survey.thumbnail_url || `${baseUrl}/api/thumbnail?title=${encodeURIComponent(survey.title)}`],
-    },
-  }
-}
 
 export default async function SurveyPage({
   params: { id },
@@ -129,11 +74,7 @@ export default async function SurveyPage({
     return notFound()
   }
 
-  // 型アサーション
   const survey = surveyData as unknown as Survey
-
-  // デバッグ用にサムネイルURLをログ出力
-  console.log('Survey thumbnail URL:', survey.thumbnail_url)
 
   const hasResponded = survey.responses?.some(r => r.userId === session?.user?.id)
   const isCreator = session?.user?.id === survey.userId
@@ -147,7 +88,7 @@ export default async function SurveyPage({
   })
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="w-full max-w-full px-2 py-8">
       <div className="mb-8">
         {survey.thumbnail_url ? (
           <ThumbnailImage

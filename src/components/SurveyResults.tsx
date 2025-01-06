@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import React, { useState, useMemo } from 'react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import type { Survey } from '@/types/survey'
 
 interface SurveyResultsProps {
@@ -12,7 +12,7 @@ interface OverallResult {
   name: string
   count: number
   percentage: number
-  [key: string]: string | number  // インデックスシグネチャを追加
+  [key: string]: string | number
 }
 
 interface AttributeResult {
@@ -23,37 +23,114 @@ interface AttributeResult {
 
 type ResultType = OverallResult | AttributeResult
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const COLORS = ['#2563eb', '#7c3aed', '#db2777', '#dc2626', '#ea580c', '#ca8a04', '#65a30d', '#0d9488']
+
+const CustomBarTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    if ('count' in data) {
-      return (
-        <div className="bg-white p-2 shadow rounded border">
-          <p className="font-medium">{label}</p>
-          <p className="text-gray-600">回答数: {data.count}人</p>
-          <p className="text-gray-600">割合: {data.percentage.toFixed(1)}%</p>
-        </div>
-      );
-    } else {
-      return (
-        <div className="bg-white p-2 shadow rounded border">
-          <p className="font-medium">{label}</p>
-          {payload.map((entry: any) => (
-            <p key={entry.name} className="text-gray-600" style={{ color: entry.color }}>
-              {entry.name}: {entry.value.toFixed(1)}%
-            </p>
-          ))}
-        </div>
-      );
-    }
+    return (
+      <div className="bg-white p-2 shadow rounded border">
+        <p className="font-medium">{label}</p>
+        <p className="text-gray-600">回答数: {data.count}人</p>
+        <p className="text-gray-600">割合: {data.percentage.toFixed(1)}%</p>
+      </div>
+    );
   }
   return null;
+};
+
+const CustomPieTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-2 shadow rounded border">
+        <p className="font-medium">{payload[0].name}</p>
+        <p className="text-gray-600">回答数: {payload[0].value}人</p>
+        <p className="text-gray-600">割合: {((payload[0].value / payload[0].payload.total) * 100).toFixed(1)}%</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomBarLabel = (props: any) => {
+  const { x, y, width, value, name } = props;
+  return (
+    <text
+      x={x + width + 5}
+      y={y + 15}
+      fill="#666"
+      textAnchor="start"
+      fontSize={12}
+      className="font-medium"
+    >
+      {`${name} (${value.toFixed(1)}%)`}
+    </text>
+  );
+};
+
+const getAttributeResults = (survey: Survey, attributeId: string) => {
+  const attribute = survey.attributes.find(a => a.id === attributeId)
+  if (!attribute) return []
+
+  return attribute.choices.map(attrChoice => {
+    const responses = survey.responses.filter(r =>
+      r.attributes.some(a =>
+        a.attributeSettingId === attributeId &&
+        a.attributeChoiceId === attrChoice.id
+      )
+    )
+
+    const choiceCounts = survey.choices.map(choice => {
+      const count = responses.filter(r => r.choiceId === choice.id).length
+      return {
+        name: choice.text || '画像のみの選択肢',
+        value: count,
+        total: responses.length
+      }
+    }).filter(item => item.value > 0)
+
+    return {
+      attributeChoice: attrChoice.text,
+      data: choiceCounts
+    }
+  }).filter(group => group.data.length > 0)
+}
+
+const getAttributeTableData = (survey: Survey, selectedAttribute: string) => {
+  const attribute = survey.attributes.find(a => a.id === selectedAttribute);
+  if (!attribute) return [];
+
+  return survey.choices.map(choice => {
+    const attributeGroups = attribute.choices.map(attrChoice => {
+      const responses = survey.responses.filter(r =>
+        r.attributes.some(a =>
+          a.attributeSettingId === selectedAttribute &&
+          a.attributeChoiceId === attrChoice.id
+        )
+      );
+      
+      const count = responses.filter(r => r.choiceId === choice.id).length;
+      const percentage = responses.length > 0 
+        ? (count / responses.length) * 100 
+        : 0;
+
+      return {
+        attributeChoice: attrChoice.text,
+        count,
+        percentage: Math.round(percentage * 10) / 10
+      };
+    });
+
+    return {
+      name: choice.text || '画像のみの選択肢',
+      attributeGroups
+    };
+  });
 };
 
 export default function SurveyResults({ survey }: SurveyResultsProps) {
   const [selectedAttribute, setSelectedAttribute] = useState<string | null>(null)
 
-  // 基本の集計データを作成し、回答数順にソート
   const overallResults: OverallResult[] = useMemo(() => {
     const results = survey.choices.map(choice => {
       const count = survey.responses.filter(r => r.choiceId === choice.id).length
@@ -66,76 +143,25 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
       }
     })
 
-    // 回答数の降順でソート
     return results.sort((a, b) => b.count - a.count)
   }, [survey])
 
-  // 属性別のクロス集計データを作成
-  const getAttributeResults = (attributeId: string): AttributeResult[] => {
-    const attribute = survey.attributes.find(a => a.id === attributeId)
-    if (!attribute) return []
+  const selectedAttributeData = selectedAttribute 
+    ? getAttributeResults(survey, selectedAttribute)
+    : []
 
-    const results = attribute.choices.map(attrChoice => {
-      const filteredResponses = survey.responses.filter(r => 
-        r.attributes.some(a => 
-          a.attributeSettingId === attributeId && 
-          a.attributeChoiceId === attrChoice.id
-        )
-      )
+  const attributeTableData = selectedAttribute 
+    ? getAttributeTableData(survey, selectedAttribute)
+    : []
 
-      return survey.choices.map(choice => {
-        const count = filteredResponses.filter(r => r.choiceId === choice.id).length
-        const percentage = filteredResponses.length > 0 
-          ? (count / filteredResponses.length) * 100 
-          : 0
-
-        return {
-          name: choice.text || '画像のみの選択肢',
-          [attrChoice.text]: Math.round(percentage * 10) / 10,
-          totalResponses: count // この属性における合計回答数
-        }
-      })
-    })
-
-    // 合計回答数を計算してソート用に使用
-    const mergedResults = results[0].map((item, index) => {
-      const mergedItem: AttributeResult = { 
-        name: item.name,
-        totalResponses: 0
-      }
-      attribute.choices.forEach((attrChoice, i) => {
-        const value = results[i][index][attrChoice.text]
-        if (typeof value === 'number') {
-          mergedItem[attrChoice.text] = value
-          // 各属性の回答数を合計
-          mergedItem.totalResponses! += results[i][index].totalResponses || 0
-        }
-      })
-      return mergedItem
-    })
-
-    // 合計回答数の降順でソート
-    return mergedResults.sort((a, b) => (b.totalResponses || 0) - (a.totalResponses || 0))
-  }
-
-  const currentResults = selectedAttribute 
-    ? getAttributeResults(selectedAttribute)
-    : overallResults
-
-  const getChartColors = (count: number) => {
-    const baseColors = ['#2563eb', '#7c3aed', '#db2777', '#dc2626', '#ea580c', '#ca8a04']
-    return Array(count).fill(0).map((_, i) => baseColors[i % baseColors.length])
-  }
-
-  const selectedAttributeData = selectedAttribute
+  const selectedAttributeInfo = selectedAttribute 
     ? survey.attributes.find(a => a.id === selectedAttribute)
     : null
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       <h2 className="text-xl font-semibold">アンケート結果</h2>
       
-      {/* 属性選択 */}
       {survey.attributes.length > 0 && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -156,42 +182,74 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
         </div>
       )}
 
-      {/* グラフ表示 */}
-      <div className="h-96">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={currentResults}
-            layout="vertical"
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              type="number"
-              domain={[0, 100]}
-              tickFormatter={(value) => `${value}%`}
-            />
-            <YAxis
-              type="category"
-              dataKey="name"
-              width={150}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            {selectedAttributeData ? (
-              selectedAttributeData.choices.map((choice, index) => (
-                <Bar
-                  key={choice.id}
-                  dataKey={choice.text}
-                  fill={getChartColors(survey.choices.length)[index]}
-                />
-              ))
-            ) : (
-              <Bar dataKey="percentage" fill="#2563eb" />
-            )}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {selectedAttribute && selectedAttributeData.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {selectedAttributeData.map(({ attributeChoice, data }) => (
+            <div key={attributeChoice} className="h-[300px]">
+              <h3 className="text-lg font-medium mb-4 text-center">{attributeChoice}</h3>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(1)}%)`}
+                    labelLine={true}
+                    startAngle={90}
+                    endAngle={450}
+                  >
+                    {data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomPieTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <p className="text-sm text-gray-500 text-center mt-2">
+                回答者数: {data[0]?.total || 0}人
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="w-full mx-[-1rem] px-4 h-96">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={overallResults}
+              layout="vertical"
+              margin={{ top: 5, right: 50, left: 5, bottom: 5 }}
+              barSize={30}
+            >
+              <XAxis
+                type="number"
+                domain={[0, 100]}
+                tickFormatter={(value) => `${value}%`}
+                padding={{ left: 0, right: 0 }}
+                interval={0}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={0}
+                tick={false}
+                axisLine={false}
+              />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <Tooltip content={<CustomBarTooltip />} />
+              <Bar
+                dataKey="percentage"
+                fill="#2563eb"
+                label={<CustomBarLabel />}
+                radius={[0, 4, 4, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
-      {/* 数値での表示 */}
       <div className="mt-6">
         <h3 className="text-lg font-medium mb-4">集計結果</h3>
         <div className="overflow-x-auto">
@@ -201,14 +259,13 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
                 <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   選択肢
                 </th>
-                {selectedAttributeData ? (
-                  selectedAttributeData.choices.map(choice => (
-                    <th
-                      key={choice.id}
-                      className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      {choice.text}
-                    </th>
+                {selectedAttribute && selectedAttributeInfo ? (
+                  selectedAttributeInfo.choices.map(attrChoice => (
+                    <React.Fragment key={attrChoice.id}>
+                      <th className="px-6 py-3 bg-gray-50 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" colSpan={2}>
+                        {attrChoice.text}
+                      </th>
+                    </React.Fragment>
                   ))
                 ) : (
                   <>
@@ -221,35 +278,56 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
                   </>
                 )}
               </tr>
+              {selectedAttribute && (
+                <tr>
+                  <th className="px-6 py-3 bg-gray-50"></th>
+                  {selectedAttributeInfo?.choices.map(attrChoice => (
+                    <React.Fragment key={attrChoice.id}>
+                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        回答数
+                      </th>
+                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        割合
+                      </th>
+                    </React.Fragment>
+                  ))}
+                </tr>
+              )}
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {currentResults.map((result, index) => (
-                <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {result.name}
-                  </td>
-                  {selectedAttributeData ? (
-                    selectedAttributeData.choices.map(choice => (
-                      <td
-                        key={choice.id}
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                      >
-                        {/* 型アサーションを追加 */}
-                        {((result as AttributeResult)[choice.text] as number | undefined)?.toFixed(1) ?? '0.0'}%
-                      </td>
-                    ))
-                  ) : (
-                    <>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {(result as OverallResult).count}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {(result as OverallResult).percentage}%
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))}
+              {selectedAttribute ? (
+                attributeTableData.map((row, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {row.name}
+                    </td>
+                    {row.attributeGroups.map((group, groupIndex) => (
+                      <React.Fragment key={groupIndex}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          {group.count}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          {group.percentage}%
+                        </td>
+                      </React.Fragment>
+                    ))}
+                  </tr>
+                ))
+              ) : (
+                overallResults.map((result, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {result.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {result.count}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {result.percentage}%
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
