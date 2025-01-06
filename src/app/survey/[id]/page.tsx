@@ -4,6 +4,7 @@ import ShareSurvey from '@/components/ShareSurvey'
 import SurveyResponse from '@/components/SurveyResponse'
 import SurveyResults from '@/components/SurveyResults'
 import SurveyComments from '@/components/SurveyComments'
+import ThumbnailImage from '@/components/ThumbnailImage'
 import { authOptions } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -76,6 +77,9 @@ export default async function SurveyPage({
   // 型アサーション
   const survey = surveyData as unknown as Survey
 
+  // デバッグ用にサムネイルURLをログ出力
+  console.log('Survey thumbnail URL:', survey.thumbnail_url)
+
   const hasResponded = survey.responses?.some(r => r.userId === session?.user?.id)
   const isCreator = session?.user?.id === survey.userId
 
@@ -90,7 +94,16 @@ export default async function SurveyPage({
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-4">{survey.title}</h1>
+        {survey.thumbnail_url ? (
+          <ThumbnailImage
+            src={survey.thumbnail_url}
+            alt={survey.title}
+            title={survey.title}
+          />
+        ) : (
+          <h1 className="text-2xl font-bold mb-4">{survey.title}</h1>
+        )}
+        
         <div className="flex items-center gap-4 mb-4">
           {survey.user.twitter_id ? (
             <Link 

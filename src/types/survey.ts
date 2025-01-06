@@ -66,6 +66,7 @@ export interface Survey {
   id: string;
   title: string;
   choice_type: string;
+  thumbnail_url: string | null;  // 追加
   created_at: Date;
   updated_at: Date;
   userId: string;
@@ -73,7 +74,7 @@ export interface Survey {
   choices: Choice[];
   attributes: AttributeSetting[];
   responses: Response[];
-  comments: Comment[];  // 追加
+  comments: Comment[];
   _count?: {
     responses: number;
   };

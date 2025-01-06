@@ -47,7 +47,7 @@ model User {
   sessions      Session[]
   surveys       Survey[]
   responses     Response[]
-  comments      Comment[] // 追加
+  comments      Comment[]
 }
 
 model VerificationToken {
@@ -59,17 +59,18 @@ model VerificationToken {
 }
 
 model Survey {
-  id          String    @id @default(cuid())
-  userId      String
-  title       String
-  choice_type String    // TEXT_ONLY, TEXT_WITH_IMAGE, IMAGE_ONLY
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id])
-  choices     Choice[]
-  attributes  AttributeSetting[]
-  responses   Response[]
-  comments    Comment[] // 追加
+  id            String    @id @default(cuid())
+  userId        String
+  title         String
+  choice_type   String    // TEXT_ONLY, TEXT_WITH_IMAGE, IMAGE_ONLY
+  thumbnail_url String?   // サムネイル画像のURL
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id])
+  choices       Choice[]
+  attributes    AttributeSetting[]
+  responses     Response[]
+  comments      Comment[]
 }
 
 model Choice {
@@ -132,7 +133,6 @@ model RespondentAttribute {
   attributeChoice     AttributeChoice  @relation(fields: [attributeChoiceId], references: [id])
 }
 
-// 追加: コメントモデル
 model Comment {
   id         String   @id @default(cuid())
   content    String

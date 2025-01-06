@@ -1,12 +1,25 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: [
-      'pbs.twimg.com',  // Twitter プロフィール画像のドメイン
-      'abs.twimg.com'   // Twitter 画像の代替ドメイン
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/api/thumbnail/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.vercel.app',
+        pathname: '/api/thumbnail/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'pbs.twimg.com',
+        pathname: '/**',
+      }
     ],
-  },
-  reactStrictMode: true,
+  }
 }
 
 module.exports = nextConfig
