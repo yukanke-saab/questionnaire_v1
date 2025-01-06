@@ -36,7 +36,7 @@ model Session {
 
 model User {
   id            String    @id @default(cuid())
-  twitter_id    String?    @unique
+  twitter_id    String?   @unique
   name          String?
   email         String?   @unique
   emailVerified DateTime?
@@ -47,6 +47,7 @@ model User {
   sessions      Session[]
   surveys       Survey[]
   responses     Response[]
+  comments      Comment[] // 追加
 }
 
 model VerificationToken {
@@ -68,6 +69,7 @@ model Survey {
   choices     Choice[]
   attributes  AttributeSetting[]
   responses   Response[]
+  comments    Comment[] // 追加
 }
 
 model Choice {
@@ -128,4 +130,16 @@ model RespondentAttribute {
   response            Response         @relation(fields: [responseId], references: [id])
   attributeSetting    AttributeSetting @relation(fields: [attributeSettingId], references: [id])
   attributeChoice     AttributeChoice  @relation(fields: [attributeChoiceId], references: [id])
+}
+
+// 追加: コメントモデル
+model Comment {
+  id         String   @id @default(cuid())
+  content    String
+  surveyId   String
+  userId     String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  survey     Survey   @relation(fields: [surveyId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 }

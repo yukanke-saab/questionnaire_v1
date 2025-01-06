@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma'
 import ShareSurvey from '@/components/ShareSurvey'
 import SurveyResponse from '@/components/SurveyResponse'
 import SurveyResults from '@/components/SurveyResults'
+import SurveyComments from '@/components/SurveyComments'
 import { authOptions } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -41,17 +42,25 @@ export default async function SurveyPage({
           },
         },
       },
-      responses: session?.user?.id ? {
-        where: {
-          OR: [
-            { userId: session.user.id },
-            { survey: { userId: session.user.id } }
-          ]
-        },
+      responses: {
         include: {
           attributes: true,
         },
-      } : undefined,
+      },
+      comments: {
+        orderBy: {
+          created_at: 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+              image: true,
+              twitter_id: true,
+            },
+          },
+        },
+      },
       _count: {
         select: {
           responses: true
@@ -135,10 +144,14 @@ export default async function SurveyPage({
         <SurveyResponse survey={survey} />
       )}
       
-      {/* 共有ボタン（作成者または未回答者のみ表示） */}
-      {(isCreator || !hasResponded) && (
-        <ShareSurvey surveyId={survey.id} title={survey.title} />
-      )}
+      {/* コメント表示（ログインしていなくても閲覧可能） */}
+      <SurveyComments 
+        surveyId={survey.id} 
+        initialComments={survey.comments} 
+      />
+
+      {/* 共有ボタン（常に表示） */}
+      <ShareSurvey surveyId={survey.id} title={survey.title} />
     </div>
   )
 }
