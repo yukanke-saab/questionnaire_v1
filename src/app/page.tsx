@@ -21,6 +21,7 @@ export default async function Home({
     select: {
       id: true,
       title: true,
+      thumbnail_url: true,  // サムネイル情報を追加
       created_at: true,
       user: {
         select: {
@@ -79,12 +80,13 @@ export default async function Home({
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {surveys.map((survey) => (
           <SurveyCard
             key={survey.id}
             id={survey.id}
             title={survey.title}
+            thumbnailUrl={survey.thumbnail_url}
             createdAt={survey.created_at}
             author={survey.user}
             responseCount={survey._count.responses}

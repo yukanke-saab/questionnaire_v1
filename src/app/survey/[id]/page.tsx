@@ -4,20 +4,20 @@ import ShareSurvey from '@/components/ShareSurvey'
 import SurveyResponse from '@/components/SurveyResponse'
 import SurveyResults from '@/components/SurveyResults'
 import SurveyComments from '@/components/SurveyComments'
-import ThumbnailImage from '@/components/ThumbnailImage'
+import VotingStatus from '@/components/VotingStatus'
+import TwitterUserLink from '@/components/TwitterUserLink'
 import { authOptions } from '@/lib/auth'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import Image from 'next/image'
 import type { Survey } from '@/types/survey'
 
-export default async function SurveyPage({
-  params: { id },
-}: {
-  params: { id: string }
-}) {
-  const session = await getServerSession(authOptions)
+interface PageProps {
+  params: { 
+    id: string 
+  }
+}
 
+async function getSurveyData(id: string) {
   const surveyData = await prisma.survey.findUnique({
     where: { id },
     include: {
@@ -71,13 +71,24 @@ export default async function SurveyPage({
   })
 
   if (!surveyData) {
+    return null
+  }
+
+  return surveyData
+}
+
+export default async function SurveyPage({ params }: PageProps) {
+  const session = await getServerSession(authOptions)
+  const surveyData = await getSurveyData(params.id)
+
+  if (!surveyData) {
     return notFound()
   }
 
   const survey = surveyData as unknown as Survey
-
   const hasResponded = survey.responses?.some(r => r.userId === session?.user?.id)
   const isCreator = session?.user?.id === survey.userId
+  const isVotingExpired = new Date(survey.votingEnd) <= new Date()
 
   const formattedDate = new Date(survey.created_at).toLocaleDateString('ja-JP', {
     year: 'numeric',
@@ -88,79 +99,58 @@ export default async function SurveyPage({
   })
 
   return (
-    <div className="w-full max-w-full px-2 py-8">
-      <div className="mb-8">
-        {survey.thumbnail_url ? (
-          <ThumbnailImage
-            src={survey.thumbnail_url}
-            alt={survey.title}
-            title={survey.title}
-          />
-        ) : (
-          <h1 className="text-2xl font-bold mb-4">{survey.title}</h1>
-        )}
-        
-        <div className="flex items-center gap-4 mb-4">
-          {survey.user.twitter_id ? (
-            <Link 
-              href={`https://twitter.com/${survey.user.twitter_id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-2 hover:text-blue-500"
-            >
-              {survey.user.image && (
-                <Image
-                  src={survey.user.image}
-                  alt={survey.user.name || '作成者のプロフィール画像'}
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
-              )}
-              <div className="flex flex-col">
-                <span className="font-medium">{survey.user.name}</span>
-                <span className="text-sm text-gray-500">@{survey.user.twitter_id}</span>
-              </div>
-            </Link>
-          ) : (
-            <div className="flex items-center space-x-2">
-              {survey.user.image && (
-                <Image
-                  src={survey.user.image}
-                  alt={survey.user.name || '作成者のプロフィール画像'}
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                />
-              )}
-              <div className="flex flex-col">
-                <span className="font-medium">{survey.user.name}</span>
-              </div>
+    <div className="w-full max-w-5xl mx-auto px-4 py-8">
+      <div className="space-y-4 mb-8">
+        <h1 className="text-2xl font-bold">{survey.title}</h1>
+
+        <div className="flex flex-row items-center gap-4">
+          {survey.user.image && (
+            <div className="flex-shrink-0">
+              <Image
+                src={survey.user.image}
+                alt=""
+                width={40}
+                height={40}
+                className="rounded-full"
+              />
             </div>
           )}
-        </div>
-        <div className="flex items-center gap-4 text-sm text-gray-600">
-          <span>回答数: {survey._count?.responses ?? 0}件</span>
-          <span>•</span>
-          <time dateTime={survey.created_at.toISOString()}>{formattedDate}</time>
+          <div className="flex-grow">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{survey.user.name}</span>
+              {survey.user.twitter_id && (
+                <TwitterUserLink twitterId={survey.user.twitter_id} />
+              )}
+            </div>
+            <div className="text-sm text-gray-600">
+              <span>回答数: {survey._count?.responses ?? 0}件</span>
+              <span className="mx-2">•</span>
+              <time dateTime={survey.created_at.toISOString()}>{formattedDate}</time>
+            </div>
+          </div>
         </div>
       </div>
-      
-      {/* 結果表示（回答済みまたは作成者の場合のみ） */}
-      {(hasResponded || isCreator) ? (
-        <SurveyResults survey={survey} />
-      ) : (
-        <SurveyResponse survey={survey} />
-      )}
-      
-      {/* コメント表示（ログインしていなくても閲覧可能） */}
-      <SurveyComments 
-        surveyId={survey.id} 
-        initialComments={survey.comments} 
-      />
 
-      {/* 共有ボタン（常に表示） */}
-      <ShareSurvey surveyId={survey.id} title={survey.title} />
+      <VotingStatus votingEnd={survey.votingEnd} />
+
+      <div className="mt-8">
+        {isVotingExpired || hasResponded || isCreator ? (
+          <SurveyResults survey={survey} />
+        ) : (
+          <SurveyResponse survey={survey} />
+        )}
+      </div>
+
+      <div className="mt-8">
+        <SurveyComments 
+          surveyId={survey.id} 
+          initialComments={survey.comments} 
+        />
+      </div>
+
+      <div className="mt-8">
+        <ShareSurvey surveyId={survey.id} title={survey.title} />
+      </div>
     </div>
   )
 }

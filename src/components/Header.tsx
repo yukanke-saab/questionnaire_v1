@@ -35,13 +35,13 @@ export default function Header() {
                   新規作成
                 </Link>
                 <Link
-                  href="/my/surveys"
+                  href="/my"
                   className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                 >
                   作成したアンケート
                 </Link>
                 <Link
-                  href="/my/responses"
+                  href="/my?filter=responded"
                   className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                 >
                   回答したアンケート
@@ -125,14 +125,14 @@ export default function Header() {
                   新規作成
                 </Link>
                 <Link
-                  href="/my/surveys"
+                  href="/my"
                   className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   作成したアンケート
                 </Link>
                 <Link
-                  href="/my/responses"
+                  href="/my?filter=responded"
                   className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                   onClick={() => setIsMenuOpen(false)}
                 >

@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import type { Survey } from '@/types/survey'
+import TwitterUserLink from '@/components/TwitterUserLink'
 
 interface SurveyResultsProps {
   survey: Survey
@@ -25,7 +26,7 @@ type ResultType = OverallResult | AttributeResult
 
 const COLORS = ['#2563eb', '#7c3aed', '#db2777', '#dc2626', '#ea580c', '#ca8a04', '#65a30d', '#0d9488']
 
-const CustomBarTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -96,38 +97,6 @@ const getAttributeResults = (survey: Survey, attributeId: string) => {
   }).filter(group => group.data.length > 0)
 }
 
-const getAttributeTableData = (survey: Survey, selectedAttribute: string) => {
-  const attribute = survey.attributes.find(a => a.id === selectedAttribute);
-  if (!attribute) return [];
-
-  return survey.choices.map(choice => {
-    const attributeGroups = attribute.choices.map(attrChoice => {
-      const responses = survey.responses.filter(r =>
-        r.attributes.some(a =>
-          a.attributeSettingId === selectedAttribute &&
-          a.attributeChoiceId === attrChoice.id
-        )
-      );
-      
-      const count = responses.filter(r => r.choiceId === choice.id).length;
-      const percentage = responses.length > 0 
-        ? (count / responses.length) * 100 
-        : 0;
-
-      return {
-        attributeChoice: attrChoice.text,
-        count,
-        percentage: Math.round(percentage * 10) / 10
-      };
-    });
-
-    return {
-      name: choice.text || '画像のみの選択肢',
-      attributeGroups
-    };
-  });
-};
-
 export default function SurveyResults({ survey }: SurveyResultsProps) {
   const [selectedAttribute, setSelectedAttribute] = useState<string | null>(null)
 
@@ -148,10 +117,6 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
 
   const selectedAttributeData = selectedAttribute 
     ? getAttributeResults(survey, selectedAttribute)
-    : []
-
-  const attributeTableData = selectedAttribute 
-    ? getAttributeTableData(survey, selectedAttribute)
     : []
 
   const selectedAttributeInfo = selectedAttribute 
@@ -238,7 +203,7 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
                 axisLine={false}
               />
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-              <Tooltip content={<CustomBarTooltip />} />
+              <Tooltip content={<CustomTooltip />} />
               <Bar
                 dataKey="percentage"
                 fill="#2563eb"
@@ -295,22 +260,36 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
               )}
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {selectedAttribute ? (
-                attributeTableData.map((row, index) => (
+              {selectedAttribute && selectedAttributeInfo ? (
+                overallResults.map((result, index) => (
                   <tr key={index}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {row.name}
+                      {result.name}
                     </td>
-                    {row.attributeGroups.map((group, groupIndex) => (
-                      <React.Fragment key={groupIndex}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                          {group.count}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                          {group.percentage}%
-                        </td>
-                      </React.Fragment>
-                    ))}
+                    {/* 属性別の集計結果 */}
+                    {selectedAttributeInfo.choices.map((attrChoice) => {
+                      const responses = survey.responses.filter(r =>
+                        r.attributes.some(a =>
+                          a.attributeSettingId === selectedAttribute &&
+                          a.attributeChoiceId === attrChoice.id
+                        )
+                      )
+                      const count = responses.filter(r => r.choiceId === survey.choices[index].id).length
+                      const percentage = responses.length > 0 
+                        ? (count / responses.length) * 100 
+                        : 0
+                      
+                      return (
+                        <React.Fragment key={attrChoice.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                            {count}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                            {percentage.toFixed(1)}%
+                          </td>
+                        </React.Fragment>
+                      )
+                    })}
                   </tr>
                 ))
               ) : (
