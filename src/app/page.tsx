@@ -21,8 +21,9 @@ export default async function Home({
     select: {
       id: true,
       title: true,
-      thumbnail_url: true,  // サムネイル情報を追加
+      thumbnail_url: true,
       created_at: true,
+      votingEnd: true,
       user: {
         select: {
           name: true,
@@ -88,6 +89,7 @@ export default async function Home({
             title={survey.title}
             thumbnailUrl={survey.thumbnail_url}
             createdAt={survey.created_at}
+            votingEnd={survey.votingEnd}
             author={survey.user}
             responseCount={survey._count.responses}
             hasResponded={survey.responses && survey.responses.length > 0}

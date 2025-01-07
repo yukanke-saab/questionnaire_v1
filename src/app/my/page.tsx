@@ -32,6 +32,7 @@ export default async function MyPage({
           title: true,
           thumbnail_url: true,
           created_at: true,
+          votingEnd: true,
           user: {
             select: {
               name: true,
@@ -68,6 +69,7 @@ export default async function MyPage({
               title: true,
               thumbnail_url: true,
               created_at: true,
+              votingEnd: true,
               user: {
                 select: {
                   name: true,
@@ -134,6 +136,7 @@ export default async function MyPage({
             title={survey.title}
             thumbnailUrl={survey.thumbnail_url}
             createdAt={survey.created_at}
+            votingEnd={survey.votingEnd}
             author={survey.user}
             responseCount={survey._count.responses}
             hasResponded={survey.responses && survey.responses.length > 0}
