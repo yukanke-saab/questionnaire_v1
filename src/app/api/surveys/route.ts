@@ -17,6 +17,7 @@ export async function POST(req: Request) {
     const choiceType = formData.get('choiceType') as string
     const choicesData = JSON.parse(formData.get('choices') as string)
     const attributesData = JSON.parse(formData.get('attributes') as string)
+    const votingEnd = formData.get('votingEnd') as string
 
     // ベースURLの取得
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
@@ -65,7 +66,8 @@ export async function POST(req: Request) {
         title,
         choice_type: choiceType,
         userId: session.user.id,
-        thumbnail_url: thumbnailUrl,  // サムネイルURLを追加
+        thumbnail_url: thumbnailUrl,
+        votingEnd: votingEnd ? new Date(votingEnd) : undefined,  // 投票期限を追加
         choices: {
           create: choicesWithUrls.map((choice: any, index: number) => ({
             text: choice.text,

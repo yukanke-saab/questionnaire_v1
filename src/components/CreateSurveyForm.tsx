@@ -33,6 +33,9 @@ export default function CreateSurveyForm() {
   const [useGender, setUseGender] = useState(false)
   const [useLocation, setUseLocation] = useState(false)
   const [customAttributes, setCustomAttributes] = useState<CustomAttribute[]>([])
+  const [votingEndDays, setVotingEndDays] = useState('1')
+const [votingEndHours, setVotingEndHours] = useState('0')
+const [votingEndMinutes, setVotingEndMinutes] = useState('0')
 
   const handleAddChoice = () => {
     if (choices.length < 10) {
@@ -105,6 +108,19 @@ export default function CreateSurveyForm() {
     setCustomAttributes(newAttributes)
   }
 
+  const handleTimeChange = (
+    value: string,
+    setter: (value: string) => void,
+    max: number
+  ) => {
+    if (value === '' || /^\d+$/.test(value)) {
+      const numValue = parseInt(value || '0')
+      if (numValue <= max) {
+        setter(value)
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -114,6 +130,17 @@ export default function CreateSurveyForm() {
       formData.append('title', title)
       formData.append('choiceType', choiceType)
       formData.append('choices', JSON.stringify(choices))
+
+      const days = parseInt(votingEndDays) || 0
+const hours = parseInt(votingEndHours) || 0
+const minutes = parseInt(votingEndMinutes) || 0
+
+const votingEnd = new Date()
+votingEnd.setDate(votingEnd.getDate() + days)
+votingEnd.setHours(votingEnd.getHours() + hours)
+votingEnd.setMinutes(votingEnd.getMinutes() + minutes)
+
+formData.append('votingEnd', votingEnd.toISOString())
       
       // 属性設定の追加
       formData.append('attributes', JSON.stringify({
@@ -340,6 +367,60 @@ export default function CreateSurveyForm() {
           ))}
         </div>
       </div>
+
+      <div className="space-y-4">
+  <h3 className="text-lg font-medium text-gray-900">投票期限設定</h3>
+  <div className="flex items-end gap-4">
+    <div>
+      <label htmlFor="votingEndDays" className="block text-sm text-gray-700">
+        日
+      </label>
+      <select
+        id="votingEndDays"
+        value={votingEndDays}
+        onChange={(e) => setVotingEndDays(e.target.value)}
+        className="block w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      >
+        {[...Array(31)].map((_, i) => (
+          <option key={i} value={i}>{i}</option>
+        ))}
+      </select>
+    </div>
+    <div>
+      <label htmlFor="votingEndHours" className="block text-sm text-gray-700">
+        時間
+      </label>
+      <select
+        id="votingEndHours"
+        value={votingEndHours}
+        onChange={(e) => setVotingEndHours(e.target.value)}
+        className="block w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      >
+        {[...Array(24)].map((_, i) => (
+          <option key={i} value={i}>{i}</option>
+        ))}
+      </select>
+    </div>
+    <div>
+      <label htmlFor="votingEndMinutes" className="block text-sm text-gray-700">
+        分
+      </label>
+      <select
+        id="votingEndMinutes"
+        value={votingEndMinutes}
+        onChange={(e) => setVotingEndMinutes(e.target.value)}
+        className="block w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+      >
+        {[...Array(60)].map((_, i) => (
+          <option key={i} value={i}>{i}</option>
+        ))}
+      </select>
+    </div>
+    <div className="text-sm text-gray-500 ml-2">
+      後に終了
+    </div>
+  </div>
+</div>
 
       {/* 送信ボタン */}
       <div>
