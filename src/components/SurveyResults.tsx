@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import type { Survey } from '@/types/survey'
 import TwitterUserLink from '@/components/TwitterUserLink'
+import Image from 'next/image'
 
 interface SurveyResultsProps {
   survey: Survey
@@ -13,13 +14,15 @@ interface OverallResult {
   name: string
   count: number
   percentage: number
-  [key: string]: string | number
+  image_url?: string | null
+  [key: string]: string | number | null | undefined
 }
 
 interface AttributeResult {
   name: string
-  [key: string]: number | string | undefined
   totalResponses?: number
+  image_url?: string | null
+  [key: string]: string | number | null | undefined
 }
 
 type ResultType = OverallResult | AttributeResult
@@ -31,6 +34,17 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     const data = payload[0].payload;
     return (
       <div className="bg-white p-2 shadow rounded border">
+        {data.image_url && (
+          <div className="mb-2">
+            <Image
+              src={data.image_url}
+              alt="選択肢の画像"
+              width={120}
+              height={90}
+              className="rounded"
+            />
+          </div>
+        )}
         <p className="font-medium">{label}</p>
         <p className="text-gray-600">回答数: {data.count}人</p>
         <p className="text-gray-600">割合: {data.percentage.toFixed(1)}%</p>
@@ -44,6 +58,17 @@ const CustomPieTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white p-2 shadow rounded border">
+        {payload[0].payload.image_url && (
+          <div className="mb-2">
+            <Image
+              src={payload[0].payload.image_url}
+              alt="選択肢の画像"
+              width={120}
+              height={90}
+              className="rounded"
+            />
+          </div>
+        )}
         <p className="font-medium">{payload[0].name}</p>
         <p className="text-gray-600">回答数: {payload[0].value}人</p>
         <p className="text-gray-600">割合: {((payload[0].value / payload[0].payload.total) * 100).toFixed(1)}%</p>
@@ -54,7 +79,7 @@ const CustomPieTooltip = ({ active, payload }: any) => {
 };
 
 const CustomBarLabel = (props: any) => {
-  const { x, y, width, value, name } = props;
+  const { x, y, width, value } = props;
   return (
     <text
       x={x + width + 5}
@@ -64,7 +89,7 @@ const CustomBarLabel = (props: any) => {
       fontSize={12}
       className="font-medium"
     >
-      {`${name} (${value.toFixed(1)}%)`}
+      {`${value.toFixed(1)}%`}
     </text>
   );
 };
@@ -86,7 +111,8 @@ const getAttributeResults = (survey: Survey, attributeId: string) => {
       return {
         name: choice.text || '画像のみの選択肢',
         value: count,
-        total: responses.length
+        total: responses.length,
+        image_url: choice.image_url
       }
     }).filter(item => item.value > 0)
 
@@ -108,7 +134,8 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
       return {
         name: choice.text || '画像のみの選択肢',
         count,
-        percentage: Math.round(percentage * 10) / 10
+        percentage: Math.round(percentage * 10) / 10,
+        image_url: choice.image_url
       }
     })
 
@@ -192,8 +219,6 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
                 type="number"
                 domain={[0, 100]}
                 tickFormatter={(value) => `${value}%`}
-                padding={{ left: 0, right: 0 }}
-                interval={0}
               />
               <YAxis
                 type="category"
@@ -264,9 +289,21 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
                 overallResults.map((result, index) => (
                   <tr key={index}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {result.name}
+                      <div className="flex items-center gap-4">
+                        {result.image_url && (
+                          <div className="relative w-20 h-16">
+                            <Image
+                              src={result.image_url}
+                              alt={result.name}
+                              fill
+                              className="object-contain rounded"
+                              sizes="80px"
+                            />
+                          </div>
+                        )}
+                        <span>{result.name}</span>
+                      </div>
                     </td>
-                    {/* 属性別の集計結果 */}
                     {selectedAttributeInfo.choices.map((attrChoice) => {
                       const responses = survey.responses.filter(r =>
                         r.attributes.some(a =>
@@ -296,7 +333,20 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
                 overallResults.map((result, index) => (
                   <tr key={index}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {result.name}
+                      <div className="flex items-center gap-4">
+                        {result.image_url && (
+                          <div className="relative w-20 h-16">
+                            <Image
+                              src={result.image_url}
+                              alt={result.name}
+                              fill
+                              className="object-contain rounded"
+                              sizes="80px"
+                            />
+                          </div>
+                        )}
+                        <span>{result.name}</span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {result.count}
