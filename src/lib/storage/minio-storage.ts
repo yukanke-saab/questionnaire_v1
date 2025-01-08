@@ -45,7 +45,7 @@ export class MinioStorage implements StorageService {
   }
 
   async uploadFile(file: Buffer, filename: string, mimeType: string): Promise<string> {
-    await this.client.putObject(this.bucket, filename, file, {
+    await this.client.putObject(this.bucket, filename, file, file.length, {
       'Content-Type': mimeType
     })
 

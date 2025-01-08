@@ -3,12 +3,15 @@ import { StorageService } from './types'
 
 export class VercelStorage implements StorageService {
   async uploadFile(file: Buffer, filename: string, mimeType: string): Promise<string> {
-    const blob = await put(filename, file, {
+    // BufferをBlobに変換
+    const blob = new Blob([file], { type: mimeType })
+
+    const uploadedBlob = await put(filename, blob, {
       access: 'public',
       addRandomSuffix: true,
       contentType: mimeType
     })
-    return blob.url
+    return uploadedBlob.url
   }
 
   async deleteFile(url: string): Promise<void> {
