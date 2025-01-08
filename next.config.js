@@ -8,6 +8,12 @@ const nextConfig = {
         pathname: '/api/thumbnail/**',
       },
       {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '9000',
+        pathname: '/questionnaire-images/**',
+      },
+      {
         protocol: 'https',
         hostname: '**.vercel.app',
         pathname: '/api/thumbnail/**',

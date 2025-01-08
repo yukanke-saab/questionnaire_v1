@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { put } from '@vercel/blob'
 import prisma from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
+import { storage } from '@/lib/storage'
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -32,22 +32,16 @@ export async function POST(req: Request) {
     const choicesWithUrls = await Promise.all(
       choicesData.map(async (choice: any, index: number) => {
         if (choice.file) {
-          // FormDataから実際のファイルを取得
           const file = formData.get(`file_${index}`) as File
           if (file) {
-            // ファイル名を生成（一意になるように）
-            const timestamp = Date.now()
-            const fileName = `${session.user.id}_${timestamp}_${file.name}`
-            
-            // Vercel Blobにアップロード
-            const blob = await put(fileName, file, {
-              access: 'public',
-              addRandomSuffix: true
-            })
+            // ファイルをBufferに変換
+            const buffer = Buffer.from(await file.arrayBuffer())
+            const filename = `${session.user.id}_${Date.now()}_${file.name}`
+            const url = await storage.uploadFile(buffer, filename, file.type)
             
             return { 
               ...choice,
-              image_url: blob.url,
+              image_url: url,
               text: choice.text || null
             }
           }
@@ -67,7 +61,7 @@ export async function POST(req: Request) {
         choice_type: choiceType,
         userId: session.user.id,
         thumbnail_url: thumbnailUrl,
-        votingEnd: votingEnd ? new Date(votingEnd) : undefined,  // 投票期限を追加
+        votingEnd: votingEnd ? new Date(votingEnd) : undefined,
         choices: {
           create: choicesWithUrls.map((choice: any, index: number) => ({
             text: choice.text,

@@ -17,7 +17,6 @@ export default function SurveyResponse({ survey }: SurveyResponseProps) {
 
   const handleSubmit = async () => {
     if (!session) {
-      // ログインしていない場合はログインを促す
       signIn('twitter')
       return
     }
@@ -64,7 +63,6 @@ export default function SurveyResponse({ survey }: SurveyResponseProps) {
     }
   }
 
-  // ボタンの無効化条件をログイン状態によって分ける
   const isButtonDisabled = session ? (isSubmitting || !selectedChoice) : false
 
   return (
@@ -72,28 +70,37 @@ export default function SurveyResponse({ survey }: SurveyResponseProps) {
       {/* 選択肢 */}
       <div className="space-y-4">
         <h2 className="text-lg font-medium">回答を選択してください</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-4">
           {survey.choices.map((choice) => (
             <button
               key={choice.id}
               onClick={() => setSelectedChoice(choice.id)}
-              className={`p-4 border rounded-lg hover:bg-gray-50 ${
+              className={`w-full p-4 border rounded-lg hover:bg-gray-50 ${
                 selectedChoice === choice.id ? 'ring-2 ring-blue-500' : ''
               }`}
             >
-              {survey.choice_type !== 'IMAGE_ONLY' && choice.text && (
-                <p className="text-sm">{choice.text}</p>
-              )}
-              {(survey.choice_type === 'TEXT_WITH_IMAGE' || survey.choice_type === 'IMAGE_ONLY') &&
-                choice.image_url && (
-                  <div className="mt-2">
-                    <img
-                      src={choice.image_url}
-                      alt={choice.text || '選択肢の画像'}
-                      className="max-h-32 rounded"
-                    />
-                  </div>
+              <div className="space-y-4">
+                {/* テキスト */}
+                {survey.choice_type !== 'IMAGE_ONLY' && choice.text && (
+                  <p className="text-sm">{choice.text}</p>
                 )}
+                {/* 画像 */}
+                {(survey.choice_type === 'TEXT_WITH_IMAGE' || survey.choice_type === 'IMAGE_ONLY') &&
+                  choice.image_url && (
+                    <div className="flex justify-center">
+                      <div className="relative w-full">
+                        <Image
+                          src={choice.image_url}
+                          alt={choice.text || '選択肢の画像'}
+                          width={400}
+                          height={300}
+                          className="rounded-lg object-contain w-full h-auto"
+                          sizes="(max-width: 768px) 50vw, 33vw"
+                        />
+                      </div>
+                    </div>
+                )}
+              </div>
             </button>
           ))}
         </div>

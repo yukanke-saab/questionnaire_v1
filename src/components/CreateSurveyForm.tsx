@@ -129,18 +129,27 @@ const [votingEndMinutes, setVotingEndMinutes] = useState('0')
       const formData = new FormData()
       formData.append('title', title)
       formData.append('choiceType', choiceType)
+      // 画像ファイルの処理
+    choices.forEach((choice, index) => {
+      if (choice.file) {
+        formData.append(`file_${index}`, choice.file)
+      }
+    })
+
+    // Choicesデータから file プロパティを除外（APIに不要なため）
+    const choicesForAPI = choices.map(({ file, ...rest }) => rest)
       formData.append('choices', JSON.stringify(choices))
 
       const days = parseInt(votingEndDays) || 0
-const hours = parseInt(votingEndHours) || 0
-const minutes = parseInt(votingEndMinutes) || 0
+      const hours = parseInt(votingEndHours) || 0
+      const minutes = parseInt(votingEndMinutes) || 0
 
-const votingEnd = new Date()
-votingEnd.setDate(votingEnd.getDate() + days)
-votingEnd.setHours(votingEnd.getHours() + hours)
-votingEnd.setMinutes(votingEnd.getMinutes() + minutes)
+      const votingEnd = new Date()
+      votingEnd.setDate(votingEnd.getDate() + days)
+      votingEnd.setHours(votingEnd.getHours() + hours)
+      votingEnd.setMinutes(votingEnd.getMinutes() + minutes)
 
-formData.append('votingEnd', votingEnd.toISOString())
+      formData.append('votingEnd', votingEnd.toISOString())
       
       // 属性設定の追加
       formData.append('attributes', JSON.stringify({
