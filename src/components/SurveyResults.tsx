@@ -3,7 +3,6 @@
 import React, { useState, useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import type { Survey } from '@/types/survey'
-import TwitterUserLink from '@/components/TwitterUserLink'
 import Image from 'next/image'
 
 interface SurveyResultsProps {
@@ -25,34 +24,21 @@ interface AttributeResult {
   [key: string]: string | number | null | undefined
 }
 
-type ResultType = OverallResult | AttributeResult
-
 const COLORS = ['#2563eb', '#7c3aed', '#db2777', '#dc2626', '#ea580c', '#ca8a04', '#65a30d', '#0d9488']
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
+    const data = payload[0].payload
     return (
       <div className="bg-white p-2 shadow rounded border">
-        {data.image_url && (
-          <div className="mb-2">
-            <Image
-              src={data.image_url}
-              alt="選択肢の画像"
-              width={120}
-              height={90}
-              className="rounded"
-            />
-          </div>
-        )}
         <p className="font-medium">{label}</p>
         <p className="text-gray-600">回答数: {data.count}人</p>
         <p className="text-gray-600">割合: {data.percentage.toFixed(1)}%</p>
       </div>
-    );
+    )
   }
-  return null;
-};
+  return null
+}
 
 const CustomPieTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
@@ -73,13 +59,13 @@ const CustomPieTooltip = ({ active, payload }: any) => {
         <p className="text-gray-600">回答数: {payload[0].value}人</p>
         <p className="text-gray-600">割合: {((payload[0].value / payload[0].payload.total) * 100).toFixed(1)}%</p>
       </div>
-    );
+    )
   }
-  return null;
-};
+  return null
+}
 
 const CustomBarLabel = (props: any) => {
-  const { x, y, width, value } = props;
+  const { x, y, width, value } = props
   return (
     <text
       x={x + width + 5}
@@ -91,8 +77,8 @@ const CustomBarLabel = (props: any) => {
     >
       {`${value.toFixed(1)}%`}
     </text>
-  );
-};
+  )
+}
 
 const getAttributeResults = (survey: Survey, attributeId: string) => {
   const attribute = survey.attributes.find(a => a.id === attributeId)
@@ -150,31 +136,9 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
     ? survey.attributes.find(a => a.id === selectedAttribute)
     : null
 
-  return (
-    <div className="w-full space-y-6">
-      <h2 className="text-xl font-semibold">アンケート結果</h2>
-      
-      {survey.attributes.length > 0 && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            属性別に表示
-          </label>
-          <select
-            value={selectedAttribute || ''}
-            onChange={(e) => setSelectedAttribute(e.target.value || null)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          >
-            <option value="">全体の結果</option>
-            {survey.attributes.map((attribute) => (
-              <option key={attribute.id} value={attribute.id}>
-                {attribute.title}による分析
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {selectedAttribute && selectedAttributeData.length > 0 ? (
+  const renderGraphSection = () => {
+    if (selectedAttribute && selectedAttributeData.length > 0) {
+      return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {selectedAttributeData.map(({ attributeChoice, data }) => (
             <div key={attributeChoice} className="h-[300px]">
@@ -206,8 +170,40 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
             </div>
           ))}
         </div>
-      ) : (
-        <div className="w-full mx-[-1rem] px-4 h-96">
+      )
+    }
+
+    return (
+      <div className="flex mt-4">
+        <div className="w-40 md:w-60 py-12 flex-shrink-0 space-y-8">
+          {overallResults.map((result) => (
+            <div 
+              key={result.name} 
+              style={{ height: '80px' }}
+              className="flex items-center"
+            >
+              <div className="w-full px-2">
+                {result.image_url ? (
+                  <div className="relative w-32 md:w-48 h-20 md:h-24">
+                    <Image
+                      src={result.image_url}
+                      alt={result.name}
+                      fill
+                      className="object-contain rounded"
+                      sizes="(max-width: 768px) 128px, 192px"
+                    />
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-900">
+                    {result.name}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex-1 h-96">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={overallResults}
@@ -238,7 +234,35 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full space-y-6">
+      <h2 className="text-xl font-semibold">アンケート結果</h2>
+      
+      {survey.attributes.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            属性別に表示
+          </label>
+          <select
+            value={selectedAttribute || ''}
+            onChange={(e) => setSelectedAttribute(e.target.value || null)}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="">全体の結果</option>
+            {survey.attributes.map((attribute) => (
+              <option key={attribute.id} value={attribute.id}>
+                {attribute.title}による分析
+              </option>
+            ))}
+          </select>
+        </div>
       )}
+
+      {renderGraphSection()}
 
       <div className="mt-6">
         <h3 className="text-lg font-medium mb-4">集計結果</h3>
@@ -288,7 +312,7 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
               {selectedAttribute && selectedAttributeInfo ? (
                 overallResults.map((result, index) => (
                   <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 text-sm text-gray-900">
                       <div className="flex items-center gap-4">
                         {result.image_url && (
                           <div className="relative w-20 h-16">
@@ -332,7 +356,7 @@ export default function SurveyResults({ survey }: SurveyResultsProps) {
               ) : (
                 overallResults.map((result, index) => (
                   <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 text-sm text-gray-900">
                       <div className="flex items-center gap-4">
                         {result.image_url && (
                           <div className="relative w-20 h-16">
