@@ -101,7 +101,21 @@ export default async function SurveyPage({ params }: PageProps) {
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-8">
       <div className="space-y-4 mb-8">
-        <h1 className="text-2xl font-bold">{survey.title}</h1>
+        {survey.thumbnail_url ? (
+          <div className="relative w-full aspect-[1200/630] rounded-lg overflow-hidden">
+            <Image
+              src={survey.thumbnail_url}
+              alt={survey.title}
+              fill
+              className="object-cover"
+              priority
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+        ) : (
+          <h1 className="text-2xl font-bold">{survey.title}</h1>
+        )}
+        
 
         <div className="flex flex-row items-center gap-4">
           {survey.user.image && (
