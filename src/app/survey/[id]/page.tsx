@@ -1,4 +1,5 @@
 import { getServerSession } from 'next-auth'
+import { Metadata } from 'next'
 import prisma from '@/lib/prisma'
 import ShareSurvey from '@/components/ShareSurvey'
 import SurveyResponse from '@/components/SurveyResponse'
@@ -77,6 +78,31 @@ async function getSurveyData(id: string) {
   return surveyData
 }
 
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const survey = await getSurveyData(params.id)
+  if (!survey) return { title: 'アンケート not found' }
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                 (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                 'http://localhost:3000')
+
+  return {
+    title: `${survey.title} | アンケton`,
+    description: `このアンケートには${survey._count.responses}件の回答があります。作成者: ${survey.user.name}`,
+    openGraph: {
+      title: survey.title,
+      description: `このアンケートには${survey._count.responses}件の回答があります。作成者: ${survey.user.name}`,
+      images: [survey.thumbnail_url ?? `${baseUrl}/api/thumbnail?title=${encodeURIComponent(survey.title)}`],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: survey.title,
+      description: `このアンケートには${survey._count.responses}件の回答があります。作成者: ${survey.user.name}`,
+      images: [survey.thumbnail_url ?? `${baseUrl}/api/thumbnail?title=${encodeURIComponent(survey.title)}`],
+    },
+  }
+}
+
 export default async function SurveyPage({ params }: PageProps) {
   const session = await getServerSession(authOptions)
   const surveyData = await getSurveyData(params.id)
@@ -116,7 +142,6 @@ export default async function SurveyPage({ params }: PageProps) {
           <h1 className="text-2xl font-bold">{survey.title}</h1>
         )}
         
-
         <div className="flex flex-row items-center gap-4">
           {survey.user.image && (
             <div className="flex-shrink-0">
