@@ -9,8 +9,8 @@ import { authOptions } from '@/lib/auth'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'アンケートアプリ',
-  description: '簡単にアンケートを作成・共有できるアプリケーション',
+  title: 'アンケton - 手軽に作れるアンケートサービス',
+  description: '画像付きの選択肢、属性別の分析など、手軽に本格的なアンケートが作れるサービスです。',
 }
 
 export default async function RootLayout({

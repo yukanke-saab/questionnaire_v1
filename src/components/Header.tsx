@@ -18,9 +18,9 @@ export default function Header() {
           <div className="flex">
             <Link 
               href="/" 
-              className="flex items-center font-bold text-xl text-blue-600 hover:text-blue-700"
+              className="flex items-center font-bold text-xl text-pink-500 hover:text-pink-600"
             >
-              アンケートアプリ
+              アンケton
             </Link>
           </div>
 
@@ -30,19 +30,19 @@ export default function Header() {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/create"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-pink-500 hover:bg-gray-50"
                 >
                   新規作成
                 </Link>
                 <Link
                   href="/my"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-pink-500 hover:bg-gray-50"
                 >
                   作成したアンケート
                 </Link>
                 <Link
                   href="/my?filter=responded"
-                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-pink-500 hover:bg-gray-50"
                 >
                   回答したアンケート
                 </Link>
@@ -74,7 +74,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => signIn('twitter')}
-                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-pink-500 hover:bg-gray-50"
               >
                 ログイン
               </button>
@@ -86,7 +86,7 @@ export default function Header() {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-blue-600 hover:bg-gray-100 focus:outline-none"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-pink-500 hover:bg-gray-100 focus:outline-none"
               aria-controls="mobile-menu"
               aria-expanded="false"
             >
@@ -119,21 +119,21 @@ export default function Header() {
                 </div>
                 <Link
                   href="/create"
-                  className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                  className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-pink-500 hover:bg-gray-50"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   新規作成
                 </Link>
                 <Link
                   href="/my"
-                  className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                  className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-pink-500 hover:bg-gray-50"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   作成したアンケート
                 </Link>
                 <Link
                   href="/my?filter=responded"
-                  className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                  className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-pink-500 hover:bg-gray-50"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   回答したアンケート
@@ -143,7 +143,7 @@ export default function Header() {
                     signOut()
                     setIsMenuOpen(false)
                   }}
-                  className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                  className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:text-pink-500 hover:bg-gray-50"
                 >
                   ログアウト
                 </button>
@@ -154,7 +154,7 @@ export default function Header() {
                   signIn('twitter')
                   setIsMenuOpen(false)
                 }}
-                className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:text-pink-500 hover:bg-gray-50"
               >
                 ログイン
               </button>
