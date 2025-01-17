@@ -10,6 +10,12 @@ const nextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
+        port: '3000',
+        pathname: '/api/thumbnail/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
         port: '9000',
         pathname: '/questionnaire-images/**',
       },

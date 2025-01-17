@@ -17,49 +17,109 @@ export async function GET(req: Request) {
       (
         <div
           style={{
-            background: 'linear-gradient(to bottom right, #2563eb, #7c3aed)',
+            background: 'linear-gradient(45deg, #FFB6C1, #FFE4E1, #E6E6FA)',
             width: '1200',
             height: '630',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             padding: '40px',
+            fontFamily: 'M PLUS Rounded 1c',
           }}
         >
+          {/* 装飾的な要素（左上） */}
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            fontSize: '60px',
+          }}>
+            ✨
+          </div>
+
+          {/* 装飾的な要素（右上） */}
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            fontSize: '60px',
+          }}>
+            ✨
+          </div>
+
+          {/* メインコンテンツ */}
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(255, 255, 255, 0.1)',
-              padding: '40px',
-              borderRadius: '20px',
+              background: 'rgba(255, 255, 255, 0.9)',
+              padding: '50px',
+              borderRadius: '30px',
               maxWidth: '90%',
+              border: '4px solid #FFF',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
             }}
           >
+            {/* タイトル前の装飾 */}
+            <div style={{
+              fontSize: '40px',
+              marginBottom: '20px',
+            }}>
+              📝
+            </div>
+
+            {/* タイトル */}
             <div
               style={{
                 fontSize: '48px',
-                color: 'white',
+                color: '#5C5C5C',
                 textAlign: 'center',
                 fontWeight: 'bold',
-                textShadow: '2px 2px 4px rgba(0, 0, 0, 0.2)',
+                marginBottom: '20px',
                 wordBreak: 'break-word',
+                lineHeight: 1.4,
               }}
             >
               {title}
             </div>
+
+            {/* サブテキスト */}
             <div
               style={{
-                fontSize: '24px',
-                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '28px',
+                color: '#888',
                 marginTop: '20px',
                 textAlign: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
               }}
             >
-              アンケートに答えてください
+              <span>アンケートに答えてください</span>
+              <span style={{ fontSize: '32px' }}>💭</span>
             </div>
+          </div>
+
+          {/* 装飾的な要素（左下） */}
+          <div style={{
+            position: 'absolute',
+            bottom: '20px',
+            left: '20px',
+            fontSize: '60px',
+          }}>
+            ✨
+          </div>
+
+          {/* 装飾的な要素（右下） */}
+          <div style={{
+            position: 'absolute',
+            bottom: '20px',
+            right: '20px',
+            fontSize: '60px',
+          }}>
+            ✨
           </div>
         </div>
       ),
